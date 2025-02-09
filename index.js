@@ -21,7 +21,7 @@ async function sleep(time) {
   });
 }
 
-function createMusic() {
+function selectSound() {
   const buttons = document.querySelectorAll(".sound-key");
   if (!buttons) return;
   buttons.forEach((button) => {
@@ -35,13 +35,36 @@ function createMusic() {
   });
 }
 
+function addListenerEventOnAudio() {
+  const audios = audioMap.values();
+  const buttons = Array.from(document.querySelectorAll(".sound-key"));
+  return new Promise((resolve) => {
+    for (const audio of audios) {
+      const key = audio.getAttribute("data-key");
+      audio.addEventListener("play", async (e) => {
+        const button = buttons.find((btn) => {
+          return btn.attributes["data-key"].value === key;
+        });
+        button.classList.add("playing");
+        await sleep(200);
+        button.classList.remove("playing");
+      });
+    }
+    resolve(true);
+  });
+}
+
 async function main() {
   await new Promise((resolve) => {
+    // creating 24 buttons that will play the audio
     Array.from({ length: 24 }).forEach((_, idx) => {
       const button = document.createElement("input");
       const filename = `key${(idx + 1).toString().padStart("2", "0")}.ogg`;
       const audio = new Audio(`./sounds/${filename}`);
+      audio.setAttribute("data-key", filename);
+      // speed of single audio
       audio.playbackRate = 4;
+      // preloading all the audio for better user experience
       audio.setAttribute("preload", "auto");
       audioMap.set(filename, audio);
       button.type = "checkbox";
@@ -51,7 +74,8 @@ async function main() {
     });
     resolve(true);
   });
-  createMusic();
+  await addListenerEventOnAudio();
+  selectSound();
 }
 
 main();
@@ -60,6 +84,7 @@ async function musicLoop(buttonsArray) {
   let k = 0;
   while (true) {
     if (pause) break;
+    // tempo
     await sleep(500);
     if (k >= 4) k = 0;
     for (let j = 0; j < buttonsArray.length; j++) {
